@@ -23,18 +23,10 @@ const supportedArchMap = {
 
   sparcv9: 'sparcv9',
   ppc64le: 'ppc64le',
-} as const
-
-const supportedPlatformMap = {
-  'linux': 'linux',
-  'aix': 'aix',
-  'darwin': 'mac',
-  'win32': 'windows',
-
-  // 以下未找到根据 os.platform() 的对应值，但是 jre 存在
-
-  'solaris': 'solaris',
-  'alpine-linux': 'alpine-linux',
+  x86: 'x86',
+  x32: 'x32',
+  s390x: 's390x',
+  riscv64: 'riscv64',
 } as const
 
 export function checkArch() {
@@ -51,6 +43,18 @@ export function checkArch() {
   return supportedArchMap[arch as keyof typeof supportedArchMap]
 }
 
+const supportedPlatformMap = {
+  'linux': 'linux',
+  'aix': 'aix',
+  'darwin': 'mac',
+  'win32': 'windows',
+
+  // 以下未找到根据 os.platform() 的对应值，但是 jre 存在
+
+  'solaris': 'solaris',
+  'alpine-linux': 'alpine-linux',
+} as const
+
 export function checkPlatform() {
   const platform = os.platform()
 
@@ -65,23 +69,46 @@ export function checkPlatform() {
   return supportedPlatformMap[platform as keyof typeof supportedPlatformMap]
 }
 
-export function getJreName() {
+export interface GetJreUrlOptions {
+  /**
+   * default: 8
+   *
+   * https://api.adoptium.net/v3/info/available_releases
+   */
+  version?: number
+  /**
+   * default: 'normal'
+   */
+  heapSize?: 'normal' | 'large'
+  /**
+   * default: 'jre
+   */
+  imageType?: 'jdk' | 'jre'
+}
+
+/**
+ * ref: https://api.adoptium.net/q/swagger-ui/#/Binary
+ */
+export function getJreUrl(options: GetJreUrlOptions = {}) {
   const arch = checkArch()
   const platform = checkPlatform()
 
-  return [
-    `OpenJDK8U-jre_${arch}_${platform}_hotspot_8u372b07`,
-    `${platform === 'windows' ? '.zip' : '.tar.gz'}`,
-  ].join('')
-}
+  const {
+    version = Number(process.env.JRE_EXTRA_VERSION) || 8,
+    heapSize = process.env.JRE_EXTRA_HEAP_SIZE || 'normal',
+    imageType = process.env.JRE_EXTRA_IMAGE_TYPE || 'jre',
+  } = options
 
-// ref: https://github.com/adoptium/temurin8-binaries/releases/tag/jdk8u372-b07
-export function getJreUrl() {
   const urlSegments = [
-    'https://github.com/adoptium',
-    '/temurin8-binaries/releases/download',
-    '/jdk8u372-b07',
-    `/${getJreName()}`,
+    'https://api.adoptium.net/v3/binary/latest',
+    `/${version}`,
+    `/ga`,
+    `/${platform}`,
+    `/${arch}`,
+    `/${imageType}`,
+    `/hotspot`,
+    `/${heapSize}`,
+    `/eclipse`,
   ]
 
   return urlSegments.join('')
@@ -92,27 +119,30 @@ export function getDestinationDir() {
   return dir
 }
 
-export function getJreCompressFilePath() {
-  return path.join(getDestinationDir(), getJreName())
-}
-
 export function getJreDecompressDir() {
   return path.join(getDestinationDir())
 }
 
-export function downloadJre() {
-  const url = getJreUrl()
-  const destDir = getDestinationDir()
+export interface DownloadJreOptions {
+  jreOptions?: GetJreUrlOptions
+  destDir?: string
+}
 
-  fse.ensureDirSync(destDir)
+export function downloadJre(options: DownloadJreOptions = {}) {
+  const { jreOptions, destDir } = options
+
+  const url = getJreUrl(jreOptions)
+  const mergedDestDir = destDir || getDestinationDir()
+
+  fse.ensureDirSync(mergedDestDir)
 
   consola.log(`JRE download url: ${url}`)
 
-  return new Promise<void>((resolve, reject) => {
-    const dl = new DownloaderHelper(url, destDir)
-    dl.on('end', () => {
+  return new Promise<string>((resolve, reject) => {
+    const dl = new DownloaderHelper(url, mergedDestDir)
+    dl.on('end', (event) => {
       consola.success(`Download completed, saved to: ${destDir}`)
-      resolve()
+      resolve(event.filePath)
     })
     dl.on('error', (err) => {
       reject(err)
@@ -121,10 +151,6 @@ export function downloadJre() {
       reject(err)
     })
   })
-}
-
-export async function decompressJre() {
-  await decompress(getJreCompressFilePath(), getJreDecompressDir())
 }
 
 export function getJreBinDir() {
@@ -181,7 +207,14 @@ export async function isJavaInstalled() {
   }
 }
 
-export async function installJre(force = false) {
+export interface InstallJreOptions {
+  downloadOptions?: DownloadJreOptions
+  force?: boolean
+}
+
+export async function installJre(options: InstallJreOptions = {}) {
+  const { downloadOptions, force = false } = options
+
   if (!force && fse.existsSync(getDestinationDir())) {
     consola.success('JRE installed')
     return
@@ -192,8 +225,8 @@ export async function installJre(force = false) {
   }
 
   try {
-    await downloadJre()
-    await decompressJre()
+    const filePath = await downloadJre(downloadOptions)
+    await decompress(filePath, getJreDecompressDir())
   } catch (err) {
     fse.removeSync(getDestinationDir())
     throw err
