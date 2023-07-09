@@ -9,21 +9,11 @@ const theme: Theme = (props) => {
   const { loadedData, loadState } = props
 
   const DocTheme = createTheme({
-    logo: <div style={{ fontSize: '20px' }}>pkg-name</div>,
+    logo: <div style={{ fontSize: '20px' }}>node-jre-extra</div>,
     topNavs: [
       {
-        label: 'Components',
-        path: '/components',
-        activeIfMatch: '/components',
-      },
-      {
-        label: 'Hooks',
-        path: '/hooks',
-        activeIfMatch: '/hooks',
-      },
-      {
-        label: 'pkg-name',
-        href: 'https://github.com/yunsii/starter-vite-react-library',
+        label: 'node-jre-extra',
+        href: 'https://github.com/yunsii/node-jre-extra',
       },
     ],
     sideNavs: (ctx) => {

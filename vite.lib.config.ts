@@ -3,12 +3,12 @@ import path from 'path'
 import { mergeConfig } from 'vite'
 import dts from 'vite-plugin-dts'
 
-import { peerDependencies } from './package.json'
+import { dependencies } from './package.json'
 import baseConfig from './vite.base.config'
 
 import type { UserConfig } from 'vite'
 
-const externalPackages = [...Object.keys(peerDependencies || {})]
+const externalPackages = [...Object.keys(dependencies || {})]
 
 // Creating regexps of the packages to make sure subpaths of the
 // packages are also treated as external
@@ -22,7 +22,10 @@ export default mergeConfig(baseConfig, {
   build: {
     minify: false,
     lib: {
-      entry: path.resolve(__dirname, 'src/index.ts'),
+      entry: [
+        path.resolve(__dirname, 'src/index.ts'),
+        path.resolve(__dirname, 'src/bin/index.ts'),
+      ],
       formats: ['es'],
     },
     rollupOptions: {
@@ -34,7 +37,7 @@ export default mergeConfig(baseConfig, {
         preserveModulesRoot: 'src',
         entryFileNames: '[name].mjs',
       },
-      external: regexpsOfPackages,
+      external: [...regexpsOfPackages, /^node:.*$/],
     },
     target: 'esnext',
   },
