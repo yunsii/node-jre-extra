@@ -12,7 +12,11 @@
     "bin",
     "dist"
   ],
-  "keywords": [],
+  "keywords": [
+    "jre",
+    "node",
+    "java"
+  ],
   "funding": [
     "https://opencollective.com/yuns",
     "https://afdian.net/@yunslove"
