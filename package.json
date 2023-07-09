@@ -15,7 +15,8 @@
   "keywords": [
     "jre",
     "node",
-    "java"
+    "java",
+    "openjdk"
   ],
   "funding": [
     "https://opencollective.com/yuns",
