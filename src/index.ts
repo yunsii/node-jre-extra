@@ -1,39 +1,17 @@
-import fse from 'fs-extra'
 import consola from 'consola'
 
-import {
-  decompressJre,
-  downloadJre,
-  getDestinationDir,
-  getJavaBin,
-  isJavaInstalled,
-} from './helpers/java'
+import { getJavaBin, installJre, isJavaInstalled } from './helpers/java'
 
-export async function installJre(force = false) {
+export async function ensureJavaEnv(force = false) {
   if (await isJavaInstalled()) {
     consola.log('You have installed java locally')
     return
   }
 
-  if (!force && fse.existsSync(getDestinationDir())) {
-    consola.success('JRE installed')
-    return
-  }
-
-  if (force) {
-    fse.removeSync(getDestinationDir())
-  }
-
-  try {
-    await downloadJre()
-    await decompressJre()
-  } catch (err) {
-    fse.removeSync(getDestinationDir())
-    throw err
-  }
+  await installJre(force)
 }
 
 export async function getJavaPath() {
-  await installJre()
+  await ensureJavaEnv()
   return getJavaBin()
 }

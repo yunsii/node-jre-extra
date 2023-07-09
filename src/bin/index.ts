@@ -1,13 +1,13 @@
 import { program } from 'commander'
 import consola from 'consola'
 
-import { getJavaPath, installJre } from '..'
+import { ensureJavaEnv, getJavaPath } from '..'
 
 program
   .command('install')
   .description('Install JRE')
   .action(async () => {
-    await installJre()
+    await ensureJavaEnv()
   })
 
 program

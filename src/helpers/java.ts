@@ -145,11 +145,7 @@ export function getJreBinDir() {
   return path.join(jreDecompressDir, target, 'bin')
 }
 
-export async function getJavaBin() {
-  if (await isJavaInstalled()) {
-    return 'java'
-  }
-
+export async function getJreJavaBin() {
   const jreBinDIr = getJreBinDir()
 
   const target = fse.readdirSync(jreBinDIr).find((item) => {
@@ -168,11 +164,38 @@ export async function getJavaBin() {
   return path.join(jreBinDIr, target)
 }
 
+export async function getJavaBin() {
+  if (await isJavaInstalled()) {
+    return 'java'
+  }
+
+  return await getJreJavaBin()
+}
+
 export async function isJavaInstalled() {
   try {
     const result = await $`java -version`
     return result.exitCode === 0
   } catch (err) {
     return false
+  }
+}
+
+export async function installJre(force = false) {
+  if (!force && fse.existsSync(getDestinationDir())) {
+    consola.success('JRE installed')
+    return
+  }
+
+  if (force) {
+    fse.removeSync(getDestinationDir())
+  }
+
+  try {
+    await downloadJre()
+    await decompressJre()
+  } catch (err) {
+    fse.removeSync(getDestinationDir())
+    throw err
   }
 }
