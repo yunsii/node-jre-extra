@@ -19,9 +19,15 @@ test('Run jar file', async () => {
   expect(result.exitCode).equal(0)
 })
 
-test('Run jar file after installed JRE', async () => {
-  await installJre()
-  const javaPath = await getJreJavaBin()
-  const result = await $`${javaPath} -jar ${jarPath}`
-  expect(result.exitCode).equal(0)
-})
+test(
+  'Run jar file after installed JRE',
+  async () => {
+    await installJre()
+    const javaPath = await getJreJavaBin()
+    const result = await $`${javaPath} -jar ${jarPath}`
+    expect(result.exitCode).equal(0)
+  },
+  {
+    timeout: 60e3,
+  },
+)
