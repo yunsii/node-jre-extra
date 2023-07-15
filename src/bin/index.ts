@@ -1,7 +1,8 @@
 import { InvalidArgumentError, program } from 'commander'
 import consola from 'consola'
+import { execaCommandSync } from 'execa'
 
-import { ensureJavaEnv, getJavaPath } from '..'
+import { getJavaBin, installJre, list } from '@/helpers/java'
 
 function customParseInt(value: string) {
   // parseInt takes a string and a radix
@@ -14,24 +15,69 @@ function customParseInt(value: string) {
 
 program
   .command('install')
-  .option('-v, --version [number]', 'JRE version', customParseInt)
+  .option('-v, --version [number]', 'JRE version', customParseInt, 8)
+  .option('-f, --force', 'Force install', false)
+  .option('-m, --mirror', 'Install with mirror speeder, fastgit for now', false)
+  .option('-v, --verbose', 'Verbose mode', false)
   .description('Install JRE')
   .action(async (options, command) => {
-    await ensureJavaEnv({
-      force: true,
-      downloadOptions: {
-        jreOptions: {
-          version: options.version,
-        },
+    const { version, force, mirror, verbose } = options
+
+    if (verbose) {
+      consola.debug('Install options', options)
+    }
+    const downloadMirrorOrigin = 'https://hub.fgit.ml'
+
+    await installJre({
+      force,
+      jreOptions: {
+        version,
+        normalizeGithubUrl: mirror
+          ? (url) => {
+              return new URL(
+                `${url.pathname}${url.search}`,
+                downloadMirrorOrigin,
+              )
+            }
+          : undefined,
       },
     })
   })
 
 program
-  .command('path')
-  .description('Print jre path')
+  .command('run')
+  .argument('<arguments>', 'Run java with arguments')
+  .option(
+    '-v, --version [number]',
+    'Assign specific JRE version',
+    customParseInt,
+  )
+  .option('-l, --use-local', 'Whether use local JRE', true)
+  .description('Run java with arguments')
+  .action(async (_arguments, options) => {
+    const { version, useLocal = true } = options
+
+    const javaBin = await getJavaBin({
+      jreOptions: {
+        version,
+      },
+      useLocal,
+    })
+    execaCommandSync(`${javaBin} ${_arguments}`, {
+      stdio: 'inherit',
+    })
+  })
+
+program
+  .command('list')
+  .description('List all installed JRE(s)')
   .action(async () => {
-    consola.log('Your current java path:', await getJavaPath())
+    consola.log(
+      'Installed JRE(s):',
+      list()
+        .map((item) => `\n* ${item}`)
+        .join(''),
+    )
   })
 
 program.parse()

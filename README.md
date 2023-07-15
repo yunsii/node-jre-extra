@@ -6,19 +6,27 @@ This module will embed the Java Runtime Environment (JRE) into a Node.js app. It
 
 ## Usage
 
-After install the package, it will install JRE automatically (support JRE 8u for now), and then:
+After install the package, you can install JRE with specific version:
+
+```shell
+# Install JRE 8
+$ npx node-jre-extra install
+
+# Install JRE with specific version, for example: 11
+$ npx node-jre-extra install -v 11
+```
+
+After installed, you can work with JRE for now:
 
 ```ts
-import { getJavaPath } from 'node-jre-extra'
+import { getJavaBin } from 'node-jre-extra'
 import { $ } from 'execa'
 
 const jarPath = 'hello.jar'
-const javaPath = await getJavaPath()
-const result = await $`${javaPath} -jar ${jarPath}`
+const javaBin = await getJavaBin()
+const result = await $`${javaBin} -jar ${jarPath}`
 console.log(result)
 ```
-
-Also, you can clone the repo and run `test` script.
 
 ## Build & Publish
 

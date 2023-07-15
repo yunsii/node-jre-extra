@@ -1,12 +1,10 @@
 import path from 'path'
 
-import { mergeConfig } from 'vite'
+import { defineConfig, mergeConfig } from 'vitest/config'
 import dts from 'vite-plugin-dts'
 
 import { dependencies } from './package.json'
 import baseConfig from './vite.base.config'
-
-import type { UserConfig } from 'vite'
 
 const externalPackages = [...Object.keys(dependencies || {})]
 
@@ -17,28 +15,31 @@ const regexpsOfPackages = externalPackages.map(
 )
 
 // https://vitejs.dev/config/
-export default mergeConfig(baseConfig, {
-  plugins: [dts()],
-  build: {
-    minify: false,
-    lib: {
-      entry: [
-        path.resolve(__dirname, 'src/index.ts'),
-        path.resolve(__dirname, 'src/bin/index.ts'),
-      ],
-      formats: ['es'],
-    },
-    rollupOptions: {
-      // inspired from: https://github.com/vitejs/vite/discussions/1736#discussioncomment-2621441
-      // preserveModulesRoot: https://rollupjs.org/guide/en/#outputpreservemodulesroot
-      output: {
-        dir: 'dist',
-        preserveModules: true,
-        preserveModulesRoot: 'src',
-        entryFileNames: '[name].mjs',
+export default mergeConfig(
+  baseConfig,
+  defineConfig({
+    plugins: [dts()],
+    build: {
+      minify: false,
+      lib: {
+        entry: [
+          path.resolve(__dirname, 'src/index.ts'),
+          path.resolve(__dirname, 'src/bin/index.ts'),
+        ],
+        formats: ['es'],
       },
-      external: [...regexpsOfPackages, /^node:.*$/],
+      rollupOptions: {
+        // inspired from: https://github.com/vitejs/vite/discussions/1736#discussioncomment-2621441
+        // preserveModulesRoot: https://rollupjs.org/guide/en/#outputpreservemodulesroot
+        output: {
+          dir: 'dist',
+          preserveModules: true,
+          preserveModulesRoot: 'src',
+          entryFileNames: '[name].mjs',
+        },
+        external: [...regexpsOfPackages, /^node:.*$/],
+      },
+      target: 'esnext',
     },
-    target: 'esnext',
-  },
-} as UserConfig)
+  }),
+)
