@@ -1,5 +1,11 @@
 # node-jre-extra
 
+## 0.0.5
+
+### Patch Changes
+
+- 📦 refactor: usage
+
 ## 0.0.4
 
 ### Patch Changes
